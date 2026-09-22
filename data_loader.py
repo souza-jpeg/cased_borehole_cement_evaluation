@@ -27,10 +27,14 @@ class WellDataset:
 
         self.df = pd.merge(
             self.df_cq,
-            self.df_hi[['Well', 'Depth', self.hi_label_col]],
+            self.df_hi[['Well', 'Depth', 'Path', self.hi_label_col]],
             on=['Well', 'Depth'],
-            how='inner'
+            how='outer'
         )
+
+        if 'Path_x' in self.df.columns and 'Path_y' in self.df.columns:
+            self.df['Path'] = self.df['Path_x'].fillna(self.df['Path_y'])
+            self.df = self.df.drop(columns=['Path_x', 'Path_y'])
 
         print(f"Dataset loaded with {len(self.df)} total records from {self.df['Well'].nunique()} wells.")
 
