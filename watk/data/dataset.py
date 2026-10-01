@@ -38,7 +38,6 @@ class WellCementDataset(Dataset):
 
         col_cq = [c for c in df_cq.columns if c not in ['Well', 'Depth', 'Path']][0]
         col_hi = [c for c in df_hi.columns if c not in ['Well', 'Depth', 'Path']][0]
-
         df_cq = df_cq.rename(columns={col_cq: 'Cement_Quality'})
         df_hi = df_hi.rename(columns={col_hi: 'Hydraulic_Isolation'})
 
@@ -49,6 +48,17 @@ class WellCementDataset(Dataset):
             df_merged['Path'] = df_merged['Path_cq'].fillna(df_merged['Path_hi'])
             df_merged = df_merged.drop(columns=['Path_cq', 'Path_hi'])
 
+        well_order = pd.unique(pd.concat([df_cq['Well'], df_hi['Well']]))
+        well_rank = {w: i for i, w in enumerate(well_order)}
+
+        df_merged = (
+            df_merged
+            .assign(_well_rank=df_merged['Well'].map(well_rank))
+            .sort_values(['_well_rank', 'Depth'])
+            .drop(columns='_well_rank')
+            .reset_index(drop=True)
+        )
+
         return df_merged
 
     def _preload_dlis_files(self):
@@ -56,7 +66,6 @@ class WellCementDataset(Dataset):
         Reads .DLIS data for each well and store them in self.well_cache.
         """
         unique_wells = self.df['Well'].unique()
-        print('oi: ', unique_wells)
         print(f"\n[Dataset] Pré-loaded data for {len(unique_wells)} well(s)...")
 
         for well in unique_wells:
